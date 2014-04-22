@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/card_background">
+
+    <ImageView
+        android:id="@+id/item_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:contentDescription="@string/item_image_cd"
+        android:minHeight="@dimen/src_height"
+        android:minWidth="@dimen/src_width" />
+
+    <TextView
+        android:id="@+id/item_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_toRightOf="@id/item_image"
+        android:textColor="#000000"
+        android:textSize="@dimen/title_text_size"
+        android:textStyle="bold"
+        tools:text="Title" />
+
+
+    <TextView
+        android:id="@+id/item_url"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/item_title"
+        android:layout_toRightOf="@id/item_image"
+        android:gravity="center_horizontal"
+        android:textColor="#000000"
+        tools:text="Url.com" />
+
+    <LinearLayout
+        android:id="@+id/item_user_wrapper"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/item_image"
+        android:layout_alignParentRight="true"
+        android:orientation="vertical"
+        android:paddingBottom="5dp"
+        android:paddingRight="5dp">
+
+
+        <ImageView
+            android:id="@+id/item_user_image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_gravity="center_horizontal"
+            android:contentDescription="@string/avatar_cd"
+            android:minHeight="@dimen/avatar_height"
+            android:minWidth="@dimen/avatar_width" />
+
+        <TextView
+            android:id="@+id/item_user_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:textColor="#000000"
+            android:textSize="@dimen/user_name_text_size"
+            tools:text="Username" />
+    </LinearLayout>
+</RelativeLayout>

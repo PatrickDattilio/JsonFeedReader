@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Patrick Dattilio\'s Reader</string>
+    <string name="json_feed_url">http://sheltered-bastion-2512.herokuapp.com/feed.json</string>
+    <string name="avatar_cd">User Avatar Image</string>
+    <string name="item_image_cd">Item Image</string>
+    <string name="open_url">Open URL</string>
+    <string name="share">Share</string>
+
+</resources>
