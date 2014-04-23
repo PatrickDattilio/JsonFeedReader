@@ -3,39 +3,42 @@ package com.dattilio.reader;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.net.Uri;
+import android.support.v4.widget.CursorAdapter;
 import android.support.v7.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.dattilio.reader.types.Avatar;
+import com.dattilio.reader.types.FeedItem;
+import com.dattilio.reader.types.User;
 import com.squareup.picasso.Picasso;
 
-class FeedAdapter extends ArrayAdapter<FeedItem> {
-    final FeedItem[] items;
-
+class FeedAdapter extends CursorAdapter {
     private final int srcWidth;
     private final int srcHeight;
 
     private final int avatarWidth;
     private final int avatarHeight;
 
+    private LayoutInflater inflater;
 
-    public FeedAdapter(Context context, FeedItem[] items) {
-        super(context, R.layout.listview_item, items);
-        this.items = items;
+    public FeedAdapter(Context context, Cursor cursor) {
+
+        super(context, cursor, FLAG_REGISTER_CONTENT_OBSERVER);
         Resources res = context.getResources();
         srcWidth = (int) res.getDimension(R.dimen.src_width);
         srcHeight = (int) res.getDimension(R.dimen.src_height);
         avatarWidth = (int) res.getDimension(R.dimen.avatar_width);
         avatarHeight = (int) res.getDimension(R.dimen.avatar_height);
-
+        inflater = LayoutInflater.from(context);
     }
 
     private static class ViewHolder {
@@ -47,36 +50,50 @@ class FeedAdapter extends ArrayAdapter<FeedItem> {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        FeedItem item = items[position];
-        ViewHolder viewHolder;
+    public View newView(Context context, Cursor cursor, ViewGroup parent) {
+        View view = inflater.inflate(R.layout.listview_item, parent, false);
+        ViewHolder viewHolder = new ViewHolder();
+        viewHolder.image = (ImageView) view.findViewById(R.id.item_image);
+        viewHolder.title = (TextView) view.findViewById(R.id.item_title);
+        viewHolder.url = (TextView) view.findViewById(R.id.item_url);
+        viewHolder.userImage = (ImageView) view.findViewById(R.id.item_user_image);
+        viewHolder.userName = (TextView) view.findViewById(R.id.item_user_name);
 
-        if (convertView == null) {
-            viewHolder = new ViewHolder();
-            LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(R.layout.listview_item, null);
-            viewHolder.image = (ImageView) convertView.findViewById(R.id.item_image);
-            viewHolder.title = (TextView) convertView.findViewById(R.id.item_title);
-            viewHolder.url = (TextView) convertView.findViewById(R.id.item_url);
-            viewHolder.userImage = (ImageView) convertView.findViewById(R.id.item_user_image);
-            viewHolder.userName = (TextView) convertView.findViewById(R.id.item_user_name);
-            convertView.setTag(viewHolder);
-        } else {
-            viewHolder = (ViewHolder) convertView.getTag();
-        }
+
+        view.setTag(viewHolder);
+        return view;
+    }
+
+    @Override
+    public void bindView(View view, Context context, Cursor cursor) {
+        ViewHolder vhold = (ViewHolder) view.getTag();
+        Avatar avatar = new Avatar(cursor.getString(FeedQuery.AVATAR_SRC), cursor.getInt(FeedQuery.AVATAR_WIDTH), cursor.getInt(FeedQuery.AVATAR_HEIGHT));
+        User user = new User(cursor.getString(FeedQuery.NAME), avatar, cursor.getString(FeedQuery.USERNAME));
+        FeedItem item = new FeedItem(cursor.getString(FeedQuery.HREF), cursor.getString(FeedQuery.SRC), cursor.getString(FeedQuery.DESC), cursor.getString(FeedQuery.ATTRIB), user);
 
         //Load the image using Picasso into the main image, resizing/cropping to fit.
-        Picasso.with(getContext()).load(item.src).resize(srcWidth, srcHeight).centerCrop().into(viewHolder.image);
-        viewHolder.title.setText(item.desc);
+        Picasso.with(context).load(item.src).resize(srcWidth, srcHeight).centerCrop().into(vhold.image);
+        vhold.title.setText(item.desc);
 
-        Picasso.with(getContext()).load(item.user.avatar.src).resize(avatarWidth, avatarHeight).centerCrop().into(viewHolder.userImage);
-        viewHolder.userName.setText(item.user.username);
-        viewHolder.url.setText(item.attrib);
+        Picasso.with(context).load(avatar.src).resize(avatarWidth, avatarHeight).centerCrop().into(vhold.userImage);
+        vhold.userName.setText(user.username);
+        vhold.url.setText(item.attrib);
 
-        convertView.setOnLongClickListener(new ItemOnLongClickListener(item));
-        convertView.setOnClickListener(new ItemOnClickListener(item, position));
+        view.setOnLongClickListener(new ItemOnLongClickListener(item));
+        view.setOnClickListener(new ItemOnClickListener(item, context, cursor.getPosition()));
+    }
 
-        return convertView;
+    private interface FeedQuery {
+        final int AVATAR_SRC = 0;
+        final int USERNAME = 1;
+        final int DESC = 2;
+        final int ID = 3;
+        final int NAME = 4;
+        final int AVATAR_WIDTH = 5;
+        final int SRC = 6;
+        final int HREF = 7;
+        final int ATTRIB = 8;
+        final int AVATAR_HEIGHT = 9;
     }
 
     private class ItemOnLongClickListener implements View.OnLongClickListener {
@@ -102,16 +119,18 @@ class FeedAdapter extends ArrayAdapter<FeedItem> {
     private class ItemOnClickListener implements View.OnClickListener {
         private final FeedItem item;
         private final int position;
+        private final Context context;
 
-        public ItemOnClickListener(FeedItem item, int position) {
+        public ItemOnClickListener(FeedItem item, Context context, int position) {
             this.item = item;
+            this.context = context;
             this.position = position;
         }
 
         @Override
         public void onClick(View v) {
             v.setSelected(true);
-            ((FeedReaderActivity) getContext()).startSupportActionMode(new ItemActionMode(item, position));
+            ((FeedReaderActivity) context).startSupportActionMode(new ItemActionMode(item, context, position));
         }
     }
 
@@ -122,16 +141,17 @@ class FeedAdapter extends ArrayAdapter<FeedItem> {
     private class ItemActionMode implements ActionMode.Callback {
         private final FeedItem selectedItem;
         private final int position;
+        private final Context context;
 
-        public ItemActionMode(FeedItem item, int position) {
-
+        public ItemActionMode(FeedItem item, Context context, int position) {
             this.selectedItem = item;
+            this.context = context;
             this.position = position;
         }
 
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            ((ListView) ((FeedReaderActivity) getContext()).findViewById(R.id.listview)).setItemChecked(position, true);
+            ((ListView) ((FeedReaderActivity) context).findViewById(R.id.listview)).setItemChecked(position, true);
             mode.getMenuInflater().inflate(R.menu.action_mode, menu);
             return true;
         }
@@ -146,20 +166,20 @@ class FeedAdapter extends ArrayAdapter<FeedItem> {
             if (item.getItemId() == R.id.open_pin && selectedItem != null) {
                 Intent i = new Intent(Intent.ACTION_VIEW);
                 i.setData(Uri.parse(selectedItem.href));
-                getContext().startActivity(i);
+                context.startActivity(i);
             } else if (item.getItemId() == R.id.share && selectedItem != null) {
                 Intent i = new Intent(Intent.ACTION_SEND);
                 i.setType("text/plain");
                 i.putExtra(Intent.EXTRA_SUBJECT, selectedItem.desc);
                 i.putExtra(Intent.EXTRA_TEXT, selectedItem.href);
-                getContext().startActivity(Intent.createChooser(i, "Share Pin"));
+                context.startActivity(Intent.createChooser(i, "Share Pin"));
             }
             return false;
         }
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            ((ListView) ((FeedReaderActivity) getContext()).findViewById(R.id.listview)).setItemChecked(position, false);
+            ((ListView) ((FeedReaderActivity) context).findViewById(R.id.listview)).setItemChecked(position, false);
         }
     }
 

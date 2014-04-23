@@ -1,58 +1,39 @@
 package com.dattilio.reader;
 
-import android.os.AsyncTask;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
-import com.squareup.okhttp.OkHttpClient;
+import com.dattilio.reader.network.NetworkService;
+import com.dattilio.reader.persist.ReaderContentProvider;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URL;
 
-public class FeedReaderActivity extends ActionBarActivity {
+public class FeedReaderActivity extends ActionBarActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private FeedAdapter adapter;
-    private ParseTask parseTask;
+    private static final int FEED_LOADER = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed_reader);
-        boolean parse = true;
-        if (savedInstanceState != null) {
-            FeedItem[] items = (FeedItem[]) savedInstanceState.getParcelableArray("items");
-            if (items != null) {
-                parse = false;
-                adapter = new FeedAdapter(FeedReaderActivity.this, items);
-                setupPage(null);
-            }
-        }
-
-        if (parse) {
-            parseTask = new ParseTask();
-            parseTask.execute();
-        }
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        if (adapter != null && !adapter.isEmpty())
-            outState.putParcelableArray("items", adapter.items);
+        NetworkService.startActionGet(this, getString(R.string.json_feed_url));
+        getSupportLoaderManager().initLoader(FEED_LOADER, null, FeedReaderActivity.this);
+        adapter = new FeedAdapter(FeedReaderActivity.this, null);
+        setupPage(null);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (parseTask != null)
-            parseTask.cancel(true);
     }
 
     private void setupPage(Exception e) {
@@ -78,32 +59,25 @@ public class FeedReaderActivity extends ActionBarActivity {
         }
     }
 
-    private class ParseTask extends AsyncTask<Void, Void, Exception> {
-
-        @Override
-        protected Exception doInBackground(Void... params) {
-            Exception exception = null;
-            try {
-
-                OkHttpClient client = new OkHttpClient();
-                URL url = new URL(getString(R.string.json_feed_url));
-                Gson gson = new Gson();
-                JsonReader reader = new JsonReader(new InputStreamReader(client.open(url).getInputStream()));
-                FeedItem[] items = gson.fromJson(reader, FeedItem[].class);
-                reader.close();
-                adapter = new FeedAdapter(FeedReaderActivity.this, items);
-            } catch (MalformedURLException e) {
-                exception = e;
-            } catch (IOException e) {
-                exception = e;
-            }
-
-            return exception;
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        switch (id) {
+            case FEED_LOADER:
+                return new CursorLoader(this, ReaderContentProvider.CONTENT_URI, null, null, null, null);
+            default:
+                return null;
         }
+    }
 
-        @Override
-        protected void onPostExecute(Exception e) {
-            setupPage(e);
-        }
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        data.moveToFirst();
+        if(!data.isAfterLast())
+            adapter.changeCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        adapter.changeCursor(null);
     }
 }

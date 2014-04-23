@@ -1,12 +1,18 @@
-package com.dattilio.reader;
+package com.dattilio.reader.types;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Avatar implements Parcelable {
-    String src;
-    private int width;
-    private int height;
+    public String src;
+    public int width;
+    public int height;
+
+    public Avatar(String src, int width, int height) {
+        this.src = src;
+        this.width = width;
+        this.height = height;
+    }
 
     @Override
     public int describeContents() {

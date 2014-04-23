@@ -1,16 +1,23 @@
-package com.dattilio.reader;
+package com.dattilio.reader.types;
 
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 public class FeedItem implements Parcelable {
-    final String href;
-    final String src;
-    final String desc;
-    private final String board;
-    final String attrib;
-    final User user;
+    public final String href;
+    public final String src;
+    public final String desc;
+    public final String attrib;
+    public final User user;
+
+    public FeedItem(String href, String src, String desc, String attrib, User user) {
+        this.href = href;
+        this.src = src;
+        this.desc = desc;
+        this.attrib = attrib;
+        this.user = user;
+    }
 
     @Override
     public int describeContents() {
@@ -22,7 +29,6 @@ public class FeedItem implements Parcelable {
         dest.writeString(this.href);
         dest.writeString(this.src);
         dest.writeString(this.desc);
-        dest.writeString(this.board);
         dest.writeString(this.attrib);
         dest.writeParcelable(this.user, flags);
     }
@@ -31,7 +37,6 @@ public class FeedItem implements Parcelable {
         this.href = in.readString();
         this.src = in.readString();
         this.desc = in.readString();
-        this.board = in.readString();
         this.attrib = in.readString();
         this.user = in.readParcelable(User.class.getClassLoader());
     }

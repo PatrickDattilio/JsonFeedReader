@@ -1,12 +1,18 @@
-package com.dattilio.reader;
+package com.dattilio.reader.types;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 public class User implements Parcelable {
-    private String name;
-    Avatar avatar;
-    String username;
+    public String name;
+    public Avatar avatar;
+    public String username;
+
+    public User(String name, Avatar avatar, String username) {
+        this.name = name;
+        this.avatar = avatar;
+        this.username = username;
+    }
 
     @Override
     public int describeContents() {
