@@ -22,9 +22,9 @@ import com.dattilio.reader.types.User;
 import com.squareup.picasso.Picasso;
 
 class FeedAdapter extends CursorAdapter {
+
     private final int srcWidth;
     private final int srcHeight;
-
     private final int avatarWidth;
     private final int avatarHeight;
 
@@ -34,6 +34,9 @@ class FeedAdapter extends CursorAdapter {
 
         super(context, cursor, FLAG_REGISTER_CONTENT_OBSERVER);
         Resources res = context.getResources();
+
+        //Item image and avatar image dimensions are set via resource here allowing tablet/phones
+        //and other DPI buckets to have specific sizes using only xml
         srcWidth = (int) res.getDimension(R.dimen.src_width);
         srcHeight = (int) res.getDimension(R.dimen.src_height);
         avatarWidth = (int) res.getDimension(R.dimen.avatar_width);
@@ -58,8 +61,6 @@ class FeedAdapter extends CursorAdapter {
         viewHolder.url = (TextView) view.findViewById(R.id.item_url);
         viewHolder.userImage = (ImageView) view.findViewById(R.id.item_user_image);
         viewHolder.userName = (TextView) view.findViewById(R.id.item_user_name);
-
-
         view.setTag(viewHolder);
         return view;
     }
@@ -71,10 +72,11 @@ class FeedAdapter extends CursorAdapter {
         User user = new User(cursor.getString(FeedQuery.NAME), avatar, cursor.getString(FeedQuery.USERNAME));
         FeedItem item = new FeedItem(cursor.getString(FeedQuery.HREF), cursor.getString(FeedQuery.SRC), cursor.getString(FeedQuery.DESC), cursor.getString(FeedQuery.ATTRIB), user);
 
-        //Load the image using Picasso into the main image, resizing/cropping to fit.
+        //Load the image using Picasso into the item image, resizing/cropping to fit.
         Picasso.with(context).load(item.src).resize(srcWidth, srcHeight).centerCrop().into(vhold.image);
         vhold.title.setText(item.desc);
 
+        //Load the Avatar image
         Picasso.with(context).load(avatar.src).resize(avatarWidth, avatarHeight).centerCrop().into(vhold.userImage);
         vhold.userName.setText(user.username);
         vhold.url.setText(item.attrib);
@@ -83,19 +85,25 @@ class FeedAdapter extends CursorAdapter {
         view.setOnClickListener(new ItemOnClickListener(item, context, cursor.getPosition()));
     }
 
+
+    /* A simple interface giving us the column number for each column in a FeedItem query*/
     private interface FeedQuery {
-        final int AVATAR_SRC = 0;
-        final int USERNAME = 1;
-        final int DESC = 2;
-        final int ID = 3;
-        final int NAME = 4;
-        final int AVATAR_WIDTH = 5;
-        final int SRC = 6;
-        final int HREF = 7;
-        final int ATTRIB = 8;
-        final int AVATAR_HEIGHT = 9;
+        static final int AVATAR_SRC = 0;
+        static final int USERNAME = 1;
+        static final int DESC = 2;
+        static final int ID = 3;
+        static final int NAME = 4;
+        static final int AVATAR_WIDTH = 5;
+        static final int SRC = 6;
+        static final int HREF = 7;
+        static final int ATTRIB = 8;
+        static final int AVATAR_HEIGHT = 9;
     }
 
+
+    /**
+     * A long press on an item will launch an ACTION_VIEW intent
+     */
     private class ItemOnLongClickListener implements View.OnLongClickListener {
         final FeedItem item;
 
@@ -113,8 +121,8 @@ class FeedAdapter extends CursorAdapter {
         }
     }
 
-    /*
-        Click Listeners
+    /**
+     * Clicking an item will start an ItemActionMode
      */
     private class ItemOnClickListener implements View.OnClickListener {
         private final FeedItem item;
@@ -134,10 +142,10 @@ class FeedAdapter extends CursorAdapter {
         }
     }
 
-    /*
-    Action mode for contextual options after clicking an item
+    /**
+     * Currently gives two options for a selected item, opening an ACTION_VIEW intent
+     * (same as long press) or a share intent.
      */
-
     private class ItemActionMode implements ActionMode.Callback {
         private final FeedItem selectedItem;
         private final int position;

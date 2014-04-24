@@ -46,15 +46,24 @@ public class NetworkService extends IntentService {
         }
     }
 
+    /**
+     * When our service recieves an ACTION_GET, we attempt to parse an array of FeedItems from a JSON
+     * string returned by the provided url.
+     *
+     * @param urlString - Url that we want to retrieve the JSON string from.
+     */
     private void handleActionGet(String urlString) {
         try {
 
             OkHttpClient client = new OkHttpClient();
             URL url = new URL(urlString);
             Gson gson = new Gson();
+            //Using OkHttp and GSON we are able to do the downloading and parsing in essentially one line
             JsonReader reader = new JsonReader(new InputStreamReader(client.open(url).getInputStream()));
             FeedItem[] items = gson.fromJson(reader, FeedItem[].class);
             reader.close();
+
+            //Now we update the ContentProvider with the results
             ContentResolver contentResolver = getContentResolver();
             for (FeedItem item:items) {
                 ContentValues values = new ContentValues();
